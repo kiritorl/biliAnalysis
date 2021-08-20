@@ -1,0 +1,82 @@
+import astropy.stats
+import scrapy
+import json
+
+
+class SpiderdataSpider(scrapy.Spider):
+    name = 'spiderdata'
+    # allowed_domains = ['www.baidu.com']
+    start_urls = []
+    page = 1
+
+    def __init__(self, base_url, keyWord, *args, **kw):
+        super(SpiderdataSpider, self).__init__(*args, **kw)
+        self.base_url = base_url
+        self.jobType = keyWord
+        SpiderdataSpider.start_urls.append(self.base_url.format(SpiderdataSpider.page))
+        pass
+
+    def parse(self, response):
+        # 编写爬虫应用实现
+        # print(response.text)
+        # 选择器 selector
+        items = response.xpath("//ul[@class='video-list clearfix']/li[@class='video-item matrix']/a/attribute::href")
+        print(items)
+
+        for item in items:
+            text = item.extract()
+            print("**********", text)
+            url = 'https://api.bilibili.com/x/web-interface/view?bvid='
+            bv = text[27:37]
+            link = url + bv
+            print(link)
+            yield scrapy.Request(link, callback=self.secondaryPage, dont_filter=True)
+            if text is not None:
+                SpiderdataSpider.page += 1
+                next_url = self.base_url.format(SpiderdataSpider.page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+                pass
+
+        # for item in items:
+        #     text = item.extract()
+        #     if text.find("__SEARCH_RESULT__") > 0:
+        #         jsonStr = text.split("window.__SEARCH_RESULT__ =")[1]
+        #         jobJson = json.loads(jsonStr)
+        #         jobList = jobJson['engine_search_result']
+        #         for job in jobList:
+        #             jobItem = ScrapyproItem()
+        #
+        #             jobName = job['job_name']
+        #             companyName = job['company_name']
+        #             jobSalary = job['providesalary_text']
+        #             jobArea = job['workarea_text']
+        #             jobDate = job['updatedate']
+        #             jobLink = job['job_href']
+        #             # 把数据向管道输出
+        #             jobItem['jobName'] = jobName
+        #             jobItem['companyName'] = companyName
+        #             jobItem['jobSalary'] = jobSalary
+        #             jobItem['jobArea'] = jobArea
+        #             jobItem['jobDate'] = jobDate
+        #             jobItem['jobLink'] = jobLink
+        #             jobItem['jobType'] = self.jobType
+        #             # 采集二级页面
+        #             # yield scrapy.Request(jobLink, callback=self.secondaryPage, dont_filter=True, meta={'jobItem': jobItem})
+        #             yield jobItem
+        #
+        #             pass
+        #         pass
+        #         # 采集下一页数据
+        #     if text.find("__SEARCH_RESULT__") > 0:
+        #         SpiderdataSpider.page += 1
+        #         next_url = self.base_url.format(SpiderdataSpider.page)
+        #         yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+        #         pass
+        #     pass
+        pass
+
+    def secondaryPage(self, response):
+        # 二级页面
+        print(response.text)
+        pass
+ 
